@@ -1,0 +1,382 @@
+<template>
+	<!-- <div class="body"> -->
+	<div class="game" @touchstart="onJump">
+		<!-- <img class="exit" src="../../common/imgs/exit.png" @click="handleExit" /> -->
+		<text class="exit" @click="handleExit">X</text>
+		<div class="ground">
+			<image
+				style="left: {{ groundLeft }}"
+				src="../../common/imgs/Ground.png"
+			/>
+			<image
+				style="left: {{ groundLeft }}"
+				src="../../common/imgs/Ground.png"
+			/>
+		</div>
+		<image
+			class="cloud"
+			style="left: {{ cloudLeft }};bottom: {{ cloudHeight }}"
+			src="../../common/imgs/cloud.png"
+		/>
+		<image
+			src="../../common/imgs/cactus.png"
+			class="cactus"
+			id="cactus0"
+			style="left: {{ cactusLeft }}"
+		/>
+		<image
+			src="../../common/imgs/cactus.png"
+			class="cactus"
+			id="cactus1"
+			style="left: {{ cactusLeft2 }}"
+		/>
+		<!-- <image
+			src="../../common/imgs/cactus.png"
+			class="cactus"
+			id="cactus2"
+			style="left: {{ cactusLeft3 }}"
+		/> -->
+		<image
+			style="bottom: {{ dinoBottom }}px"
+			src="../../common/imgs/{{ D_src }}.png"
+			class="dino"
+			id="dino"
+		/>
+		<text class="score">{{ score }}</text>
+		<!-- <text class="score">SCORE : {{ console }}</text> -->
+		<!-- <text show="{{ visible }}" class="start-screen" @click="handleStart">
+			{{ startScreen }}
+		</text> -->
+		<image
+			src="../../common/imgs/{{ startScreen }}.png"
+			show="{{ visible }}"
+			class="start-screen"
+			@click="handleStart"
+		/>
+	</div>
+	<!-- </div> -->
+</template>
+
+<script>
+import app from "@system.app";
+
+export default {
+	// 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
+	private: {
+		//dino
+		D_src: "dino-run-2",
+		D_GRAVITY: 0.1,
+		// D_GRAVITY: 0.008,
+		D_JUMP_SPEED: 4.8,
+		// D_JUMP_SPEED: 1.5,
+		D_FRAME_COUNT: 2,
+		D_FRAME_TIME: 25,
+		// D_FRAME_TIME: 100,
+
+		D_isJumping: false,
+		D_dinoFrame: 0,
+		D_currentFrameTime: 0,
+		dinoBottom: 45,
+		yVelocity: 0,
+		DinoRects: {
+			left: 35,
+			bottom: null,
+		},
+
+		//cactus
+		C_SPEED: 2.5,
+		// C_SPEED: 0.5,
+		cactusLeft: "400px",
+		cactusLeft2: "400px",
+		// cactusLeft3: "-30px",
+		C_leftOffset: 0,
+		C_leftOffset2: 0,
+		// C_leftOffset3: -80,
+		CactusRects: {
+			left: null,
+			bottom: 60,
+		},
+		CactusRects2: {
+			left: null,
+			bottom: 60,
+		},
+
+		//ground
+		G_SPEED: 2.5,
+		// G_SPEED: 0.8,
+		G_leftOffset: 0,
+		groundLeft: "0px",
+
+		//cloud
+		CL_SPEED: 0.6,
+		cloudLeft: "400px",
+		CL_leftOffset: -400,
+		cloudHeight: null,
+
+		//game
+		lastTime: null,
+		time: 0,
+		speedScale: 0.5,
+		startScreen: "start-game",
+		score: 0,
+		visible: true,
+		gameTimer: null,
+	},
+
+	handleStart() {
+		this.visible = false;
+		this.score = 0;
+		this.setupCloud();
+		this.setupDino();
+		this.setupCactus();
+		this.gameTimer = setInterval(this.gameLoop, 10, [this.lastTime]);
+	},
+
+	setupDino() {
+		this.D_src = "dino-run-2";
+		this.D_isJumping = false;
+		this.D_dinoFrame = 0;
+		this.D_currentFrameTime = 0;
+	},
+
+	handleExit() {
+		// if (direction.right) {
+		// if (e.direction == "right") {
+		app.terminate();
+		// }
+	},
+
+	handleRun(delta, speedScale) {
+		if (!this.D_isJumping) this.D_currentFrameTime += delta * speedScale;
+
+		if (this.D_isJumping) {
+			this.D_src = "dino-run-2";
+			return;
+		}
+
+		if (this.D_currentFrameTime >= this.D_FRAME_TIME) {
+			this.D_dinoFrame = (this.D_dinoFrame + 1) % this.D_FRAME_COUNT;
+			this.D_src = "dino-run-" + this.D_dinoFrame.toString();
+			this.D_currentFrameTime -= this.D_FRAME_TIME;
+		}
+	},
+
+	handleJump(delta) {
+		if (!this.D_isJumping) return;
+
+		this.dinoBottom += this.yVelocity * delta;
+
+		if (this.dinoBottom <= 45) {
+			this.dinoBottom = 45;
+			this.D_isJumping = false;
+		}
+
+		this.yVelocity -= this.D_GRAVITY * delta;
+	},
+
+	onJump() {
+		if (this.D_isJumping) return;
+
+		this.yVelocity = this.D_JUMP_SPEED;
+		this.D_isJumping = true;
+	},
+
+	updateGround(delta, speedScale) {
+		if (this.G_leftOffset > -920) {
+			this.G_leftOffset =
+				this.G_leftOffset - 1 * delta * this.G_SPEED * speedScale;
+		} else {
+			this.G_leftOffset = 0;
+		}
+		this.groundLeft = this.G_leftOffset + "px";
+		// this.G_SPEED += 0.0001;
+	},
+
+	updateCloud(delta, speedScale) {
+		if (this.CL_leftOffset > -100) {
+			this.CL_leftOffset =
+				this.CL_leftOffset - 1 * delta * this.CL_SPEED * speedScale;
+		} else {
+			this.cloudHeight = this.randomNumberBetween(100, 300) + "px";
+			this.CL_leftOffset = 400;
+		}
+		this.cloudLeft = this.CL_leftOffset + "px";
+		// this.G_SPEED += 0.0001;
+	},
+
+	setupCloud() {
+		this.CL_leftOffset = -400;
+	},
+
+	setupCactus() {
+		this.cactusLeft = "400px";
+		this.cactusLeft2 = "450px";
+		this.C_leftOffset = -60;
+		this.C_leftOffset2 = -70;
+		// this.cactusLeft3 = "750px";
+	},
+
+	updateCactus(delta, speedScale) {
+		// if (this.C_leftOffset3 > -40) {
+		if (this.C_leftOffset > -10) {
+			this.C_leftOffset =
+				this.C_leftOffset - 1 * delta * this.G_SPEED * speedScale;
+			// this.C_leftOffset2 =
+			// 	this.C_leftOffset2 - 1 * delta * this.G_SPEED * speedScale;
+			// this.C_leftOffset3 =
+			// 	this.C_leftOffset3 - 1 * delta * this.G_SPEED * speedScale;
+		} else {
+			this.C_leftOffset = 336 + this.randomNumberBetween(650, 1200);
+			// this.C_leftOffset2 = 600 + this.randomNumberBetween(200, 250);
+			// this.C_leftOffset3 = 700 + this.randomNumberBetween(375, 475);
+		}
+		if (this.C_leftOffset2 > -10) {
+			this.C_leftOffset2 =
+				this.C_leftOffset2 - 1 * delta * this.G_SPEED * speedScale;
+		} else {
+			this.C_leftOffset2 = 336 + this.randomNumberBetween(0, 200);
+			// if (this.C_leftOffset2 - this.C_leftOffset <= 20) {
+			//     this.C_leftOffset2 += 40;
+			// }
+		}
+		this.cactusLeft = this.C_leftOffset + "px";
+		this.cactusLeft2 = this.C_leftOffset2 + "px";
+		// this.cactusLeft3 = this.C_leftOffset3 + "px";
+	},
+
+	randomNumberBetween(min, max) {
+		return Math.floor(Math.random() * (max - min + 1) + min);
+	},
+
+	getCactusRects() {
+		// return [
+		// 	this.$element("cactus0"),
+		// 	this.$element("cactus1"),
+		// 	this.$element("cactus2"),
+		// ].map((cactus) => {
+		// 	return cactus.getBoundingClientRect({
+		// 		success: function (data) {
+		// 			const { top, bottom, left, right, width, height } = data;
+		// 			return data;
+		// 		},
+		// 	});
+		// });
+
+		this.CactusRects.left = this.C_leftOffset;
+		this.CactusRects2.left = this.C_leftOffset2;
+	},
+
+	getDinoRects() {
+		this.DinoRects.bottom = this.dinoBottom;
+	},
+	// {
+	// 			success: function (data) {
+	// 				// const { top, bottom, left, right, width, height } = data;
+	// 				return data;
+	// 			},
+	// 			fail: function () {
+	// 				clearInterval(this.gameTimer);
+	// 			},
+	// 		}
+	updateTime() {
+		var currentDate = new Date();
+		this.time = currentDate.getTime().toString().substring(0, 2);
+	},
+
+	gameLoop(lastTime) {
+		this.updateTime();
+		if (lastTime == null) {
+			lastTime = this.time;
+		}
+		let delta = this.time - lastTime;
+		lastTime = this.time;
+		this.updateGround(delta, this.speedScale);
+		this.updateCloud(delta, this.speedScale);
+		this.updateCactus(delta, this.speedScale);
+		this.handleRun(delta, this.speedScale);
+		this.handleJump(delta);
+		this.getDinoRects();
+		this.getCactusRects();
+		this.score += 1;
+		if (this.checkLose()) this.handleLose();
+	},
+
+	checkLose() {
+		// return this.getCactusRects().some((rect) => {
+		// 	isCollision(rect, dinoRect);
+		// });
+		return (
+			this.isCollision(this.DinoRects, this.CactusRects) ||
+			this.isCollision(this.DinoRects, this.CactusRects2)
+		);
+	},
+
+	isCollision(rect1, rect2) {
+		return (
+			rect1.left + 68 >= rect2.left &&
+			rect1.left <= rect2.left + 24 &&
+			rect1.bottom <= rect2.bottom
+		);
+	},
+
+	handleLose() {
+		this.D_src = "dino-lose";
+		this.startScreen = "restart";
+		this.visible = true;
+		clearInterval(this.gameTimer);
+	},
+};
+</script>
+
+<style>
+.exit {
+	position: absolute;
+	top: 25px;
+	left: 40px;
+    font-size: 40px;
+}
+
+.game {
+	background-color: white;
+	color: black;
+	margin: 0;
+	height: 480px;
+	max-width: 336px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.ground {
+	display: flex;
+	position: absolute;
+	bottom: 50px;
+	left: 0px;
+}
+
+.cloud {
+	position: absolute;
+}
+
+.dino {
+	position: absolute;
+	left: 35px;
+}
+
+.cactus {
+	display: flex;
+	position: absolute;
+	bottom: 60px;
+}
+
+.score {
+	position: absolute;
+	font-size: 35px;
+	top: 25px;
+	margin: auto;
+}
+
+.start-screen {
+	position: absolute;
+}
+</style>

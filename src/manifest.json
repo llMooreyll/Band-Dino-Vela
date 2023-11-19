@@ -1,0 +1,29 @@
+{
+  "package": "com.ankaa.banddino",
+  "name": "BandDino",
+  "versionName": "0.0.2",
+  "versionCode": 1,
+  "minPlatformVersion": 1000,
+  "minAPILevel": 2,
+  "icon": "/common/imgs/logo.png",
+  "deviceTypeList": [
+    "watch"
+  ],
+  "features": [
+    {
+      "name": "system.device"
+    }
+  ],
+  "config": {
+    "logLevel": "log",
+    "designWidth": 336
+  },
+  "router": {
+    "entry": "pages/index",
+    "pages": {
+      "pages/index": {
+        "component": "index"
+      }
+    }
+  }
+}
